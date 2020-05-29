@@ -96,14 +96,14 @@ resource "null_resource" "ocp_installer_wait_for_bootstrap" {
 
 locals {
   expanded_masters_nfs = <<-EOT
-    %{ for i in range(var.count_master) ~}
-    /mnt/nfs/ocp  master-${i}.${var.cluster_name}.${var.cluster_basedomain}(rw,no_root_squash)
-    %{ endfor }
+    %{ for i in range(length(var.master_ips)) ~}
+    /mnt/nfs/ocp  ${element(var.master_ips, i)}(rw,no_root_squash);
+    %{ endfor ~}
   EOT
   expanded_compute_nfs = <<-EOT
-    %{ for i in range(var.count_compute) ~}
-    /mnt/nfs/ocp  worker-${i}.${var.cluster_name}.${var.cluster_basedomain}(rw,no_root_squash)
-    %{ endfor }
+    %{ for i in range(length(var.worker_ips)) ~}
+    /mnt/nfs/ocp  ${element(var.worker_ips, i)}(rw,no_root_squash);
+    %{ endfor ~}
   EOT
 }
 
