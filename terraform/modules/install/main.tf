@@ -180,7 +180,7 @@ resource "null_resource" "ocp_approve_pending_csrs" {
   command    = <<EOT
     while [ ! -f ${path.root}/artifacts/install/auth/kubeconfig ]; do sleep 2; done;
     sleep 180;
-    export KUBECONFIG=="${path.root}/artifacts/install/auth/kubeconfig";
+    export KUBECONFIG="${path.root}/artifacts/install/auth/kubeconfig";
     export oc=${path.root}/artifacts/oc
     while ($oc get csr | grep -q -i Pending); do echo "Still seeing Pending CSRs"; ($oc get csr -oname | xargs $oc adm certificate approve); sleep 35; done
   EOT
@@ -192,7 +192,7 @@ resource "null_resource" "ocp_nfs_provisioner" {
   depends_on = [ null_resource.ocp_installer_wait_for_completion ]
 
   provisioner "local-exec" {
-  command    = "${path.module}/scripts/nfs-provisioner.sh ${abspath(path.root)} ${var.bastion_ip}"
+  command    = "${path.module}/templates/nfs-provisioner.sh ${abspath(path.root)} ${var.bastion_ip}"
   
   }
 }
