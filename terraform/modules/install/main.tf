@@ -32,11 +32,17 @@ locals {
         server ${element(var.master_ips, i)}:22623; 
         %{ endfor ~}
   EOT
-  expanded_compute = <<-EOT
+  expanded_compute_https = <<-EOT
         %{ for i in range(length(var.worker_ips)) ~}
         server ${element(var.worker_ips, i)}:443; 
         %{ endfor ~}
   EOT
+  expanded_compute_http = <<-EOT
+        %{ for i in range(length(var.worker_ips)) ~}
+        server ${element(var.worker_ips, i)}:80;
+        %{ endfor ~}
+  EOT
+
 }
 
 data "template_file" "nginx_lb" {
@@ -44,10 +50,11 @@ data "template_file" "nginx_lb" {
     template   = file("${path.module}/templates/nginx-lb.conf.tpl")
 
   vars = {
-    expanded_masters     = local.expanded_masters
-    expanded_compute     = local.expanded_compute
-    expanded_mcs         = local.expanded_mcs
-    bootstrap_ip         = element(var.bootstrap_ip, 0)
+    expanded_masters       = local.expanded_masters
+    expanded_compute_http  = local.expanded_compute_http
+    expanded_compute_https = local.expanded_compute_https
+    expanded_mcs           = local.expanded_mcs
+    bootstrap_ip           = element(var.bootstrap_ip, 0)
   }
 
 }
@@ -97,12 +104,12 @@ resource "null_resource" "ocp_installer_wait_for_bootstrap" {
 locals {
   expanded_masters_nfs = <<-EOT
     %{ for i in range(length(var.master_ips)) ~}
-    /mnt/nfs/ocp  ${element(var.master_ips, i)}(rw,no_root_squash);
+/mnt/nfs/ocp  ${element(var.master_ips, i)}(rw,no_root_squash)
     %{ endfor ~}
   EOT
   expanded_compute_nfs = <<-EOT
     %{ for i in range(length(var.worker_ips)) ~}
-    /mnt/nfs/ocp  ${element(var.worker_ips, i)}(rw,no_root_squash);
+/mnt/nfs/ocp  ${element(var.worker_ips, i)}(rw,no_root_squash)
     %{ endfor ~}
   EOT
 }
