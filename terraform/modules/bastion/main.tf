@@ -46,8 +46,15 @@ data "template_file" "ipxe_script" {
   }
 }
 
-output "ipxe" {
-  value = data.template_file.ipxe_script
+locals {
+  arch           = "x86_64"
+  coreos_baseurl = "http://54.172.173.155/pub/openshift-v4/dependencies/rhcos"
+  coreos_url     = "${local.coreos_baseurl}/${var.ocp_version}/${var.ocp_version}.${var.ocp_version_zstream}"
+  coreos_filenm  = "rhcos-${var.ocp_version}.${var.ocp_version_zstream}-${local.arch}"
+  coreos_img     = "${local.coreos_filenm}-metal.${local.arch}.raw.gz"
+  coreos_kernel  = "${local.coreos_filenm}-installer-kernel-${local.arch}"
+  coreos_initrd  = "${local.coreos_filenm}-installer-initramfs.${local.arch}.img"
+  
 }
 
 resource "packet_device" "nginx" {
@@ -129,6 +136,21 @@ provisioner "file" {
 //  content       = data.template_file.nginx_lb.rendered
 //  destination = "/usr/share/nginx/modules/nginx-lb.conf"
 //}
+
+provisioner "remote-exec" {
+
+  connection {
+    private_key = file(var.ssh_private_key_path)
+    host        = packet_device.nginx.access_public_ipv4
+  }
+
+
+  inline = [
+    "curl -o /usr/share/nginx/html/${local.coreos_img} ${local.coreos_url}/${local.coreos_img}",
+    "curl -o /usr/share/nginx/html/${local.coreos_kernel} ${local.coreos_url}/${local.coreos_kernel}",
+    "curl -o /usr/share/nginx/html/${local.coreos_initrd} ${local.coreos_url}/${local.coreos_initrd}"
+  ]
+}
 
 provisioner "remote-exec" {
 
