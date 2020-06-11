@@ -24,24 +24,24 @@ variable "worker_ips" {
 
 locals {
   expanded_masters = <<-EOT
-    %{ for i in range(length(var.master_ips)) ~} 
-    server master-${i} ${element(var.master_ips, i)}:6443 check
-    %{ endfor ~}
+        %{ for i in range(length(var.master_ips)) ~} 
+        server ${element(var.master_ips, i)}:6443; 
+        %{ endfor ~}
   EOT
   expanded_mcs = <<-EOT
-    %{ for i in range(length(var.master_ips)) ~} 
-    server master-${i} ${element(var.master_ips, i)}:22623 check
-    %{ endfor ~}
+        %{ for i in range(length(var.master_ips)) ~} 
+        server ${element(var.master_ips, i)}:22623; 
+        %{ endfor ~}
   EOT
   expanded_compute_https = <<-EOT
-    %{ for i in range(length(var.worker_ips)) ~}
-    server worker-${i} ${element(var.worker_ips, i)}:443 check
-    %{ endfor ~}
+        %{ for i in range(length(var.worker_ips)) ~}
+        server ${element(var.worker_ips, i)}:443; 
+        %{ endfor ~}
   EOT
   expanded_compute_http = <<-EOT
-    %{ for i in range(length(var.worker_ips)) ~}
-    server worker-${i} ${element(var.worker_ips, i)}:80 check
-    %{ endfor ~}
+        %{ for i in range(length(var.worker_ips)) ~}
+        server ${element(var.worker_ips, i)}:80;
+        %{ endfor ~}
   EOT
   expanded_masters_nfs = <<-EOT
     %{ for i in range(length(var.master_ips)) ~}
@@ -54,13 +54,13 @@ locals {
     %{ endfor ~}
   EOT
 
-  bootstrap_ip             = element(var.bootstrap_ip, 0)
-  haproxy_cfg_file      = "/etc/haproxy/haproxy.cfg"
+  bootstrap_ip           = element(var.bootstrap_ip, 0)
+  nginx_config_file      = (var.operating_system == "rhel_7" ? "/etc/nginx/modules/nginx-lb.conf" : "/usr/share/nginx/modules/nginx-lb.conf")
 }
 
-data "template_file" "haproxy_lb" {
+data "template_file" "nginx_lb" {
     depends_on = [ var.depends ]
-    template   = file("${path.module}/templates/haproxy.cfg.tpl")
+    template   = file("${path.module}/templates/nginx-lb.conf.tpl")
 
   vars = {
     expanded_masters       = local.expanded_masters
@@ -82,8 +82,8 @@ resource "null_resource" "reconfig_lb" {
       host        = var.bastion_ip
     }
 
-    content       = data.template_file.haproxy_lb.rendered
-    destination   = local.haproxy_cfg_file
+    content       = data.template_file.nginx_lb.rendered
+    destination   = local.nginx_config_file
   }
 
   provisioner "remote-exec" {
@@ -93,8 +93,10 @@ resource "null_resource" "reconfig_lb" {
       host        = var.bastion_ip
     }
 
+
     inline = [
-      "systemctl restart haproxy"
+      "echo 'include /etc/nginx/modules/*.conf;' >> /etc/nginx/nginx.conf",
+      "systemctl restart nginx"
     ]
   }
 
@@ -102,15 +104,9 @@ resource "null_resource" "reconfig_lb" {
 
 resource "null_resource" "check_port" {
   depends_on = [ var.depends ]
-
-  provisioner "remote-exec" {
-    
-    connection {
-      private_key = file(var.ssh_private_key_path)
-      host        = var.bastion_ip
-    }
-
-    inline = [<<EOT
+  provisioner "local-exec" {
+    //command  = "i=0; while [[ $(curl -k -s -o /dev/null -w ''%%{http_code}'' https://${local.bootstrap_ip}:6443) != '403' ]]; do ((i++));sleep 2; if [ $i -ge 1200 ]; then exit 1; done"
+    command = <<EOT
       i=0;
       while [[ $(curl -k -s -o /dev/null -w ''%%{http_code}'' https://${local.bootstrap_ip}:6443) != '403' ]]; do 
       ((i++));
@@ -121,28 +117,19 @@ resource "null_resource" "check_port" {
       fi
       done
     EOT
-    ]
   }
 
 }
-
 
 resource "null_resource" "ocp_installer_wait_for_bootstrap" {
 
   depends_on = [ null_resource.check_port ]
 
-  provisioner "remote-exec" {
-
-    connection {
-      private_key = file(var.ssh_private_key_path)
-      host        = var.bastion_ip
-    }
-
-    inline = [<<EOT
-      while [ ! -f /tmp/artifacts/install/auth/kubeconfig ]; do sleep 2; done; 
-      /tmp/artifacts/openshift-install --dir /tmp/artifacts/install wait-for bootstrap-complete;
-    EOT
-    ]
+  provisioner "local-exec" {
+  command    = <<EOT
+    while [ ! -f ${path.root}/artifacts/install/auth/kubeconfig ]; do sleep 2; done; 
+    ${path.root}/artifacts/openshift-install --dir ${path.root}/artifacts/install wait-for bootstrap-complete;
+  EOT
   }
 }
 
@@ -193,8 +180,8 @@ resource "null_resource" "ocp_bootstrap_cleanup" {
     }
 
     inline = [
-      "sed -i '/${element(var.bootstrap_ip, 0)}/d' ${local.haproxy_cfg_file}",
-      "systemctl restart haproxy"
+      "sed -i '/server ${element(var.bootstrap_ip, 0)}/d' ${local.nginx_config_file}",
+      "systemctl restart nginx"
     ]
   }
 }
@@ -203,18 +190,11 @@ resource "null_resource" "ocp_installer_wait_for_completion" {
 
   depends_on = [null_resource.ocp_installer_wait_for_bootstrap, null_resource.ocp_bootstrap_cleanup ]
 
-  provisioner "remote-exec" {
-   
-    connection {
-      private_key = file(var.ssh_private_key_path)
-      host        = var.bastion_ip
-    }
-
-    inline = [<<EOT
-      while [ ! -f /tmp/artifacts/install/auth/kubeconfig ]; do sleep 2; done;
-      /tmp/artifacts/openshift-install --dir /tmp/artifacts/install wait-for install-complete;
-    EOT
-    ]
+  provisioner "local-exec" {
+  command    = <<EOT
+    while [ ! -f ${path.root}/artifacts/install/auth/kubeconfig ]; do sleep 2; done;
+    ${path.root}/artifacts/openshift-install --dir ${path.root}/artifacts/install wait-for install-complete;
+  EOT
   }
 }
 
@@ -222,47 +202,25 @@ resource "null_resource" "ocp_approve_pending_csrs" {
 
   depends_on = [ null_resource.ocp_installer_wait_for_bootstrap, null_resource.ocp_bootstrap_cleanup ]
 
-  provisioner "remote-exec" {
-    connection {
-      private_key = file(var.ssh_private_key_path)
-      host        = var.bastion_ip
-    }
-    inline = [<<EOT
-      while [ ! -f /tmp/artifacts/install/auth/kubeconfig ]; do sleep 2; done;
-      sleep 300;
-      export KUBECONFIG="/tmp/artifacts/install/auth/kubeconfig";
-      export oc=/tmp/artifacts/oc
-      $oc get csr -oname | xargs $oc adm certificate approve;
-      sleep 180;
-      $oc get csr -oname | xargs $oc adm certificate approve;
-    EOT
-    ]
+  provisioner "local-exec" {
+  command    = <<EOT
+    while [ ! -f ${path.root}/artifacts/install/auth/kubeconfig ]; do sleep 2; done;
+    sleep 300;
+    export KUBECONFIG="${path.root}/artifacts/install/auth/kubeconfig";
+    export oc=${path.root}/artifacts/oc
+    $oc get csr -oname | xargs $oc adm certificate approve;
+    sleep 180;
+    $oc get csr -oname | xargs $oc adm certificate approve;
+  EOT
   }
 }
 
 resource "null_resource" "ocp_nfs_provisioner" {
 
   depends_on = [ null_resource.ocp_installer_wait_for_completion ]
-  
-  provisioner "file" {
 
-    connection {
-      private_key = file(var.ssh_private_key_path)
-      host        = var.bastion_ip
-    }
-
-    source       = "${path.module}/templates/nfs-provisioner.sh"
-    destination  = "/tmp/artifacts/nfs-provisioner.sh"
-  }
-
-  provisioner "remote-exec" {
-    connection {
-      private_key = file(var.ssh_private_key_path)
-      host        = var.bastion_ip
-    }
-    inline        = [
-      "/tmp/artifacts/nfs-provisioner.sh /tmp ${var.bastion_ip}"
-    ]
+  provisioner "local-exec" {
+  command    = "${path.module}/templates/nfs-provisioner.sh ${abspath(path.root)} ${var.bastion_ip}"
   
   }
 }

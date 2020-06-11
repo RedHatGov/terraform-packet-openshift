@@ -12,6 +12,5 @@ module "bootstrap_openshift" {
   project_id           = var.project_id
   cf_zone_id           = var.cf_zone_id
   bastion_ip           = module.bastion.nginx_ip
-  depends              = [module.bastion.finished]
+  depends              = [module.prepare_openshift.finished]
 }
-

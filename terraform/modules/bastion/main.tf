@@ -20,7 +20,7 @@ provider "packet" {
 }
 
 data "template_file" "user_data" { 
-    template = file("${path.module}/templates/user_data.sh")
+    template = file("${path.module}/templates/user_data_${var.operating_system}.sh")
 }
 
 data "template_file" "nginx_lb" {
@@ -70,102 +70,41 @@ resource "packet_device" "nginx" {
 
 resource "null_resource" "dircheck" {
 
-provisioner "remote-exec" {
+  provisioner "remote-exec" {
 
-  connection {
-    private_key = file(var.ssh_private_key_path)
-    host        = packet_device.nginx.access_public_ipv4
+    connection {
+      private_key = file(var.ssh_private_key_path)
+      host        = packet_device.nginx.access_public_ipv4
+    }
+
+
+    inline = [
+      "while [ ! -d /usr/share/nginx/html ]; do sleep 2; done; ls /usr/share/nginx/html/",
+      "while [ ! -f /usr/lib/systemd/system/nfs-server.service ]; do sleep 2; done; ls /usr/lib/systemd/system/nfs-server.service"
+    ]
   }
-
-
-  inline = [
-    "while [ ! -d /usr/share/nginx/html ]; do sleep 2; done; ls /usr/share/nginx/html/",
-    "while [ ! -f /usr/lib/systemd/system/nfs-server.service ]; do sleep 2; done; ls /usr/lib/systemd/system/nfs-server.service"
-  ]
 }
 
-
-}
-
-//START OF NULL FILE RESOURCE
-
-resource "null_resource" "file_uploads" {
+resource "null_resource" "ocp_install_ignition" {
 
   depends_on = [null_resource.dircheck]
 
-provisioner "file" {
+  provisioner "remote-exec" {
 
-  connection {
-    private_key = file(var.ssh_private_key_path)
-    host        = packet_device.nginx.access_public_ipv4
+    connection {
+      private_key = file(var.ssh_private_key_path)
+      host        = packet_device.nginx.access_public_ipv4
+    }
+
+
+    inline = [
+      "curl -o /usr/share/nginx/html/${local.coreos_img} ${local.coreos_url}/${local.coreos_img}",
+      "curl -o /usr/share/nginx/html/${local.coreos_kernel} ${local.coreos_url}/${local.coreos_kernel}",
+      "curl -o /usr/share/nginx/html/${local.coreos_initrd} ${local.coreos_url}/${local.coreos_initrd}",
+      "chmod -R 0755 /usr/share/nginx/html/"
+    ]
   }
-
-  source       = "${path.root}/artifacts/install/bootstrap.ign"
-  destination = "/usr/share/nginx/html/bootstrap.ign"
 }
-
-provisioner "file" {
-
-  connection {
-    private_key = file(var.ssh_private_key_path)
-    host        = packet_device.nginx.access_public_ipv4
-  }
-
-  source       = "${path.root}/artifacts/install/master.ign"
-  destination = "/usr/share/nginx/html/master.ign"
-}
-
-provisioner "file" {
-
-  connection {
-    private_key = file(var.ssh_private_key_path)
-    host        = packet_device.nginx.access_public_ipv4
-  }
-
-  source       = "${path.root}/artifacts/install/worker.ign"
-  destination = "/usr/share/nginx/html/worker.ign"
-}
-
-//provisioner "file" {
-//
-//  connection {
-//    private_key = file(var.ssh_private_key_path)
-//    host        = packet_device.nginx.access_public_ipv4
-//  }
-//
-//  content       = data.template_file.nginx_lb.rendered
-//  destination = "/usr/share/nginx/modules/nginx-lb.conf"
-//}
-
-provisioner "remote-exec" {
-
-  connection {
-    private_key = file(var.ssh_private_key_path)
-    host        = packet_device.nginx.access_public_ipv4
-  }
-
-
-  inline = [
-    "curl -o /usr/share/nginx/html/${local.coreos_img} ${local.coreos_url}/${local.coreos_img}",
-    "curl -o /usr/share/nginx/html/${local.coreos_kernel} ${local.coreos_url}/${local.coreos_kernel}",
-    "curl -o /usr/share/nginx/html/${local.coreos_initrd} ${local.coreos_url}/${local.coreos_initrd}"
-  ]
-}
-
-provisioner "remote-exec" {
-
-  connection {
-    private_key = file(var.ssh_private_key_path)
-    host        = packet_device.nginx.access_public_ipv4
-  }
-
-
-  inline = [
-    "chmod -R 0755 /usr/share/nginx/html/",
-  ]
-}
-}
-//END OF NULL FILE RESOURCE
 
 resource "null_resource" "ipxe_files" {
 
