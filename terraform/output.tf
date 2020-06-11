@@ -29,7 +29,7 @@ output "Information" {
     export KUBECONFIG="/tmp/artifacts/install/auth/kubeconfig"
   
   To use the CLI (locally):
-    export KUBECONFIG="${path.root}/kubeconfig"
+    export KUBECONFIG="${abspath(path.root)}/kubeconfig"
 
   Review your nodes:
     oc get nodes
