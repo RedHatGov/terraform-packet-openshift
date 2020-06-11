@@ -45,12 +45,12 @@ variable "facility" {
 
 variable "plan_master" {
   description = "Plan for Master Nodes"
-  default     = "c2.medium.x86"
+  default     = "c3.medium.x86"
 }
 
 variable "plan_compute" {
   description = "Plan for Compute Nodes"
-  default     = "c2.medium.x86"
+  default     = "c3.small.x86"
 }
 
 variable "count_master" {

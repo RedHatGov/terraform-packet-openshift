@@ -261,6 +261,7 @@ resource "null_resource" "ocp_nfs_provisioner" {
       host        = var.bastion_ip
     }
     inline        = [
+      "chmod +x /tmp/artifacts/nfs-provisioner.sh",
       "/tmp/artifacts/nfs-provisioner.sh /tmp ${var.bastion_ip}"
     ]
   

@@ -2,5 +2,6 @@
 /override.tf
 /terraform.tfvars
 terraform.tfstate*
-artifacts
-artifacts/*
+artifacts/
+auth/
+

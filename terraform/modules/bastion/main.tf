@@ -23,24 +23,14 @@ data "template_file" "user_data" {
     template = file("${path.module}/templates/user_data_${var.operating_system}.sh")
 }
 
-data "template_file" "nginx_lb" {
-    template = file("${path.module}/templates/nginx-lb.conf.tpl")
-
-  vars = {
-    cluster_name         = var.cluster_name
-    cluster_basedomain   = var.cluster_basedomain
-  }
-
-}
-
 data "template_file" "ipxe_script" {
-  depends_on = [packet_device.nginx]
+  depends_on = [packet_device.lb]
   for_each   = toset(var.nodes)
   template   = file("${path.module}/templates/ipxe.tpl")
 
   vars = {
     node_type           = each.value
-    bastion_ip          = packet_device.nginx.access_public_ipv4 
+    bastion_ip          = packet_device.lb.access_public_ipv4 
     ocp_version         = var.ocp_version
     ocp_version_zstream = var.ocp_version_zstream
   }
@@ -57,8 +47,8 @@ locals {
   
 }
 
-resource "packet_device" "nginx" {
-    hostname = "nginx.${var.cluster_name}.${var.cluster_basedomain}" 
+resource "packet_device" "lb" {
+    hostname = "lb-0.${var.cluster_name}.${var.cluster_basedomain}" 
     plan = var.plan
     facilities = [var.facility]
     operating_system = var.operating_system
@@ -74,7 +64,7 @@ resource "null_resource" "dircheck" {
 
     connection {
       private_key = file(var.ssh_private_key_path)
-      host        = packet_device.nginx.access_public_ipv4
+      host        = packet_device.lb.access_public_ipv4
     }
 
 
@@ -93,7 +83,7 @@ resource "null_resource" "ocp_install_ignition" {
 
     connection {
       private_key = file(var.ssh_private_key_path)
-      host        = packet_device.nginx.access_public_ipv4
+      host        = packet_device.lb.access_public_ipv4
     }
 
 
@@ -115,7 +105,7 @@ resource "null_resource" "ipxe_files" {
 
     connection {
       private_key = file(var.ssh_private_key_path)
-      host        = packet_device.nginx.access_public_ipv4
+      host        = packet_device.lb.access_public_ipv4
     }
 
     content       = each.value.rendered
@@ -126,7 +116,7 @@ resource "null_resource" "ipxe_files" {
 
     connection {
       private_key = file(var.ssh_private_key_path)
-      host        = packet_device.nginx.access_public_ipv4
+      host        = packet_device.lb.access_public_ipv4
     }
 
 
@@ -136,29 +126,8 @@ resource "null_resource" "ipxe_files" {
   }
 }
 
-resource "cloudflare_record" "dns_a_cluster_api" {
-  zone_id    = var.cf_zone_id
-  type       = "A"
-  name       = "api.${var.cluster_name}.${var.cluster_basedomain}"
-  value      = packet_device.nginx.access_public_ipv4
-}
-
-resource "cloudflare_record" "dns_a_cluster_api_int" {
-  zone_id    = var.cf_zone_id
-  type       = "A"
-  name       = "api-int.${var.cluster_name}.${var.cluster_basedomain}"
-  value      = packet_device.nginx.access_public_ipv4
-}
-
-resource "cloudflare_record" "dns_a_cluster_wildcard_https" {
-  zone_id    = var.cf_zone_id
-  type       = "A"
-  name       = "*.apps.${var.cluster_name}.${var.cluster_basedomain}"
-  value      = packet_device.nginx.access_public_ipv4
-}
-
 output "finished" {
     depends_on = [null_resource.file_uploads, null_resource.ipxe_files]
-    value      = "Nginx HTTP/LB provisioning finished."
+    value      = "Loadbalancer provisioning finished."
 }
 

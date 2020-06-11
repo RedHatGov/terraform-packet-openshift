@@ -119,6 +119,7 @@ resource "null_resource" "ocp_install_manifests" {
     }
     
     inline = [
+      "chronyc -a 'burst 4/4'; sleep 10; chronyc -a makestep",
       "cp /tmp/artifacts/install/install-config.yaml /tmp/artifacts/install/install-config.yaml.backup",
       "/tmp/artifacts/openshift-install create manifests --dir /tmp/artifacts/install",
       "sed -i 's/mastersSchedulable: true/mastersSchedulable: false/g' /tmp/artifacts/install/manifests/cluster-scheduler-02-config.yml",
