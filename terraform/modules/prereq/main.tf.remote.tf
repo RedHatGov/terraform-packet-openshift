@@ -123,7 +123,8 @@ resource "null_resource" "ocp_install_manifests" {
       "/tmp/artifacts/openshift-install create manifests --dir /tmp/artifacts/install",
       "sed -i 's/mastersSchedulable: true/mastersSchedulable: false/g' /tmp/artifacts/install/manifests/cluster-scheduler-02-config.yml",
       "/tmp/artifacts/openshift-install create ignition-configs --dir /tmp/artifacts/install",
-      "cp /tmp/artifacts/install/*.ign /usr/share/nginx/html/"
+      "cp /tmp/artifacts/install/*.ign /usr/share/nginx/html/",
+      "chmod -R 0755 /usr/share/nginx/html/"
     ]
   }
 }
