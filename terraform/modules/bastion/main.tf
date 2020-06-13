@@ -39,7 +39,7 @@ data "template_file" "ipxe_script" {
 data "template_file" "ignition_append" {
   depends_on = [packet_device.lb]
   for_each   = toset(var.nodes)
-  template   = file("${path.module}/templates/ignition-append.yaml.tpl")
+  template   = file("${path.module}/templates/ignition-append.json.tpl")
 
   vars = {
     node_type           = each.value
@@ -91,6 +91,7 @@ resource "null_resource" "dircheck" {
 resource "null_resource" "ocp_install_ignition" {
 
   depends_on = [null_resource.dircheck]
+
 
   provisioner "remote-exec" {
 
