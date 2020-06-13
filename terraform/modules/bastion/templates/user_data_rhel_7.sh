@@ -1,9 +1,18 @@
 #!/bin/bash
 
-# Preconfigure EPEL
-yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+wget -O /tmp/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+chmod +x /tmp/jq
+cp /tmp/jq /usr/bin
 
-yum install -y nginx jq nfs-utils haproxy
+cat <<EOT >> /etc/yum.repos.d/nginx.repo
+[nginx]
+name=nginx repo
+baseurl=https://nginx.org/packages/rhel/\$releasever/\$basearch/
+gpgcheck=0
+enabled=1
+EOT
+
+yum install -y nginx nfs-utils haproxy
 
 # Update nginx configs for file hosting
 sed -i "s|location / {|location / {\n             autoindex on;|g" /etc/nginx/nginx.conf
