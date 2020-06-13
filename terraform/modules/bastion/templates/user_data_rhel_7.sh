@@ -17,6 +17,8 @@ yum install -y nginx nfs-utils haproxy
 # Update nginx configs for file hosting
 sed -i "s|location / {|location / {\n             autoindex on;|g" /etc/nginx/nginx.conf
 sed -i "s/80/8080/g" /etc/nginx/nginx.conf
+sed -i "s|location / {|location / {\n             autoindex on;|g" /etc/nginx/conf.d/default.conf
+sed -i "s/80/8080/g" /etc/nginx/conf.d/default.conf
 rm -rf /usr/share/nginx/html/index.html
 
 # Update firewalld

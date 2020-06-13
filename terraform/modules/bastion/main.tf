@@ -36,6 +36,19 @@ data "template_file" "ipxe_script" {
   }
 }
 
+data "template_file" "ignition_append" {
+  depends_on = [packet_device.lb]
+  for_each   = toset(var.nodes)
+  template   = file("${path.module}/templates/ignition-append.yaml.tpl")
+
+  vars = {
+    node_type           = each.value
+    bastion_ip          = packet_device.lb.access_public_ipv4 
+    ocp_version         = var.ocp_version
+    ocp_version_zstream = var.ocp_version_zstream
+  }
+}
+
 locals {
   arch           = "x86_64"
   coreos_baseurl = "http://54.172.173.155/pub/openshift-v4/dependencies/rhcos"
@@ -110,6 +123,36 @@ resource "null_resource" "ipxe_files" {
 
     content       = each.value.rendered
     destination = "/usr/share/nginx/html/${ each.key }.ipxe"
+  }
+
+  provisioner "remote-exec" {
+
+    connection {
+      private_key = file(var.ssh_private_key_path)
+      host        = packet_device.lb.access_public_ipv4
+    }
+
+
+    inline = [
+      "chmod -R 0755 /usr/share/nginx/html/",
+    ]
+  }
+}
+
+resource "null_resource" "ignition_append_files" {
+
+  depends_on = [null_resource.dircheck]  
+  for_each  = data.template_file.ignition_append
+
+  provisioner "file" {
+
+    connection {
+      private_key = file(var.ssh_private_key_path)
+      host        = packet_device.lb.access_public_ipv4
+    }
+
+    content       = each.value.rendered
+    destination = "/usr/share/nginx/html/${ each.key }-append.ign"
   }
 
   provisioner "remote-exec" {
