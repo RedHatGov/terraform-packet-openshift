@@ -14,13 +14,13 @@
    },
    "storage": {
       "files": [
-         {
+         { 
             "filesystem": "root",
-            "path": "/etc/dhcp/dhclient.conf",
+            "path": "/etc/hosts",
             "mode": 644,
             "overwrite": true,
             "contents": {
-               "source": "data:text/plain;charset=utf-8,send%20dhcp-client-identifier%20%3D%20hardware%3B%0D%0Aprepend%20domain-name-servers%201.1.1.1%3B"
+               "source": "data:,127.0.0.1%20%20%20localhost%20localhost.localdomain%20localhost4%20localhost4.localdomain4%0A%3A%3A1%20%20%20%20%20%20%20%20%20localhost%20localhost.localdomain%20localhost6%20localhost6.localdomain6%0A%0A${bastion_ip}%20%20%20api.${cluster_name}.${cluster_basedomain}%0A${bastion_ip}%20%20%20api-int.${cluster_name}.${cluster_basedomain}%0A%0A"
             }
          }
       ]

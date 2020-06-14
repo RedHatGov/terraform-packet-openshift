@@ -44,8 +44,8 @@ data "template_file" "ignition_append" {
   vars = {
     node_type           = each.value
     bastion_ip          = packet_device.lb.access_public_ipv4 
-    ocp_version         = var.ocp_version
-    ocp_version_zstream = var.ocp_version_zstream
+    cluster_name        = var.cluster_name
+    cluster_basedomain  = var.cluster_basedomain
   }
 }
 
