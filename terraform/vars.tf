@@ -81,3 +81,17 @@ variable "ocp_version_zstream" {
 variable "ocp_cluster_manager_token" {
   description = "OpenShift Cluster Manager API Token used to generate your pullSecret (https://cloud.redhat.com/openshift/token)"
 }
+
+variable "ocp_storage_nfs_enable" {
+  description = "Enable configuration of NFS and NFS-related k8s provisioner/storageClass"
+  default     = false
+} 
+variable "ocp_storage_ocs_enable" {
+  description = "Enable installation of OpenShift Container Storage via operator. This requires a minimum of 3 worker nodes"
+  default     = false
+}
+
+variable "ocp_virtualization_enable" {
+  description = "Enable installation of OpenShift Virtualization via operator. This requires storage provided by OCS, NFS, and/or hostPath provisioner(s)"
+  default     = false
+}

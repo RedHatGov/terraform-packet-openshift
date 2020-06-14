@@ -10,7 +10,9 @@ variable "count_compute" {}
 variable "operating_system" {}
 variable "cluster_name" {}
 variable "cluster_basedomain" {}
-
+variable "ocp_storage_nfs_enable" {}
+variable "ocp_storage_ocs_enable" {}
+variable "ocp_virtualization_enable" {}
 variable "bootstrap_ip" {
   type = list
 }
@@ -243,7 +245,8 @@ resource "null_resource" "ocp_approve_pending_csrs" {
 resource "null_resource" "ocp_nfs_provisioner" {
 
   depends_on = [ null_resource.ocp_installer_wait_for_completion ]
-  
+  count      = var.ocp_storage_nfs_enable == true ? 1 : 0
+
   provisioner "file" {
 
     connection {
