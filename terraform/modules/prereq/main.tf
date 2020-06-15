@@ -119,13 +119,17 @@ resource "null_resource" "ocp_install_manifests" {
     }
     
     inline = [
-      "chronyc -a 'burst 4/4'; sleep 10; chronyc -a makestep",
+      "timedatectl set-ntp no",
+      "new_time=`date '+%Y-%m-%d %H:%M:%S' -d '-8 hours'`",
+      "timedatectl set-time \"$${new_time}\"",
       "cp /tmp/artifacts/install/install-config.yaml /tmp/artifacts/install/install-config.yaml.backup",
       "/tmp/artifacts/openshift-install create manifests --dir /tmp/artifacts/install",
       "sed -i 's/mastersSchedulable: true/mastersSchedulable: false/g' /tmp/artifacts/install/manifests/cluster-scheduler-02-config.yml",
       "/tmp/artifacts/openshift-install create ignition-configs --dir /tmp/artifacts/install",
       "cp /tmp/artifacts/install/*.ign /usr/share/nginx/html/",
-      "chmod -R 0755 /usr/share/nginx/html/"
+      "chmod -R 0755 /usr/share/nginx/html/",
+      "timedatectl set-ntp yes",
+      "chronyc -a 'burst 4/4'; sleep 10; chronyc -a makestep"
     ]
   }
 }
