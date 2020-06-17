@@ -86,7 +86,7 @@ frontend openshift-api-server
 backend openshift-api-server
     balance source
     mode tcp
-    ${expanded_bootstrap}
+    ${expanded_bootstrap_api}
 ${expanded_masters}
 
 frontend machine-config-server
@@ -98,7 +98,7 @@ frontend machine-config-server
 backend machine-config-server
     balance source
     mode tcp
-    ${expanded_bootstrap}
+    ${expanded_bootstrap_mcs}
 ${expanded_mcs}
 
 frontend ingress-http

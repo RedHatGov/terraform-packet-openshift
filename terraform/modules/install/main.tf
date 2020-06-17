@@ -56,7 +56,8 @@ locals {
     %{ endfor ~}
   EOT
 
-  expanded_bootstrap    = length(var.bootstrap_ip) >= 1 ? "server bootstrap-0 ${element(var.bootstrap_ip, 0)}:6443 check" : ""
+  expanded_bootstrap_api    = length(var.bootstrap_ip) >= 1 ? "server bootstrap-0 ${element(var.bootstrap_ip, 0)}:6443 check" : ""
+  expanded_bootstrap_mcs    = length(var.bootstrap_ip) >= 1 ? "server bootstrap-0 ${element(var.bootstrap_ip, 0)}:22623 check" : ""
   haproxy_cfg_file      = "/etc/haproxy/haproxy.cfg"
 }
 
@@ -69,7 +70,8 @@ data "template_file" "haproxy_lb" {
     expanded_compute_http  = local.expanded_compute_http
     expanded_compute_https = local.expanded_compute_https
     expanded_mcs           = local.expanded_mcs
-    expanded_bootstrap     = local.expanded_bootstrap
+    expanded_bootstrap_api = local.expanded_bootstrap_api
+    expanded_bootstrap_mcs = local.expanded_bootstrap_mcs
   }
 }
 
