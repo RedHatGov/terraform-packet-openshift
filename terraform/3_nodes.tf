@@ -3,7 +3,7 @@ module "openshift_bootstrap" {
 
   cluster_name         = var.cluster_name
   cluster_basedomain   = var.cluster_basedomain
-  node_count           = 1
+  node_count           = var.count_bootstrap
   plan                 = var.plan_master
   facility             = var.facility
   ssh_private_key_path = var.ssh_private_key_path
@@ -13,8 +13,6 @@ module "openshift_bootstrap" {
   node_type            = "bootstrap"
   depends              = [module.prepare_openshift.finished]
 }
-
-
 
 module "dns_bootstrap" {
   source = "./modules/dns"

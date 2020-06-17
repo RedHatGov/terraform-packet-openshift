@@ -56,7 +56,7 @@ locals {
     %{ endfor ~}
   EOT
 
-  bootstrap_ip             = element(var.bootstrap_ip, 0)
+  expanded_bootstrap    = length(var.bootstrap_ip) >= 1 ? "server bootstrap-0 ${element(var.bootstrap_ip, 0)}:6443 check" : ""
   haproxy_cfg_file      = "/etc/haproxy/haproxy.cfg"
 }
 
@@ -69,7 +69,7 @@ data "template_file" "haproxy_lb" {
     expanded_compute_http  = local.expanded_compute_http
     expanded_compute_https = local.expanded_compute_https
     expanded_mcs           = local.expanded_mcs
-    bootstrap_ip           = local.bootstrap_ip
+    expanded_bootstrap     = local.expanded_bootstrap
   }
 }
 
@@ -114,9 +114,9 @@ resource "null_resource" "check_port" {
 
     inline = [<<EOT
       i=0;
-      while [[ $(curl -k -s -o /dev/null -w ''%%{http_code}'' https://${local.bootstrap_ip}:6443) != '403' ]]; do 
+      while [[ $(curl -k -s -o /dev/null -w ''%%{http_code}'' https://${length(var.bootstrap_ip) >= 1 ? "${element(var.bootstrap_ip, 0)}" : "${var.bastion_ip}"}:6443) != '403' ]]; do 
       ((i++));
-      echo "Waiting for TCP6443 on boostrap (Retrying $i of 1200)";
+      echo "Waiting for TCP6443 on boostrap/API (Retrying $i of 1200)";
       sleep 2;
       if [[ $i -ge 1200 ]]; then 
       echo "Timeout exceed"; exit 1; 
@@ -215,6 +215,8 @@ resource "null_resource" "ocp_installer_wait_for_completion" {
     inline = [<<EOT
       while [ ! -f /tmp/artifacts/install/auth/kubeconfig ]; do sleep 2; done;
       /tmp/artifacts/openshift-install --dir /tmp/artifacts/install wait-for install-complete;
+      mkdir -p ~/.kube || true;
+      cp /tmp/artifacts/install/auth/kubeconfig ~/.kube/config || true;
     EOT
     ]
   }
@@ -234,9 +236,9 @@ resource "null_resource" "ocp_approve_pending_csrs" {
       sleep 300;
       export KUBECONFIG="/tmp/artifacts/install/auth/kubeconfig";
       export oc=/tmp/artifacts/oc
-      $oc get csr -oname | xargs $oc adm certificate approve;
+      ($oc get csr -oname | xargs $oc adm certificate approve) || true;
       sleep 180;
-      $oc get csr -oname | xargs $oc adm certificate approve;
+      ($oc get csr -oname | xargs $oc adm certificate approve) || true;
     EOT
     ]
   }

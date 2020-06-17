@@ -53,6 +53,11 @@ variable "plan_compute" {
   default     = "c2.medium.x86"
 }
 
+variable "count_bootstrap" {
+  default     = "1"
+  description = "Number of Master Nodes."
+}
+
 variable "count_master" {
   default     = "3"
   description = "Number of Master Nodes."
@@ -84,7 +89,7 @@ variable "ocp_cluster_manager_token" {
 
 variable "ocp_storage_nfs_enable" {
   description = "Enable configuration of NFS and NFS-related k8s provisioner/storageClass"
-  default     = false
+  default     = true
 } 
 variable "ocp_storage_ocs_enable" {
   description = "Enable installation of OpenShift Container Storage via operator. This requires a minimum of 3 worker nodes"

@@ -86,7 +86,7 @@ frontend openshift-api-server
 backend openshift-api-server
     balance source
     mode tcp
-    server bootstrap-0 ${bootstrap_ip}:6443 check
+    ${expanded_bootstrap}
 ${expanded_masters}
 
 frontend machine-config-server
@@ -98,7 +98,7 @@ frontend machine-config-server
 backend machine-config-server
     balance source
     mode tcp
-    server bootstrap-0 ${bootstrap_ip}:22623 check
+    ${expanded_bootstrap}
 ${expanded_mcs}
 
 frontend ingress-http
