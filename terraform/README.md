@@ -84,4 +84,4 @@ cd openshift-packet-deploy/terraform
 
 ---
 
-<a name="3nodedeployment"><sup>1</sup></a> As of OpenShift Container Platform 4.5 you can [deploy three-node clusters on bare metal](https://docs.openshift.com/container-platform/4.5/installing/installing_bare_metal/installing-bare-metal.html#installation-three-node-cluster_installing-bare-metal). [↩](# openshift-via-terraform-on-packet)
+<a name="3nodedeployment"><sup>1</sup></a> As of OpenShift Container Platform 4.5 you can [deploy three-node clusters on bare metal](https://docs.openshift.com/container-platform/4.5/installing/installing_bare_metal/installing-bare-metal.html#installation-three-node-cluster_installing-bare-metal). [↩](#openshift-via-terraform-on-packet)
