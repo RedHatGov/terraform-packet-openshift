@@ -1,4 +1,4 @@
-![Terraform CI](https://github.com/RedHatSI/openshift-packet-deploy/workflows/Terraform%20CI/badge.svg) ![](https://img.shields.io/badge/stability-experimental-red.svg)
+![Terraform CI](https://github.com/RedHatSI/openshift-packet-deploy/workflows/Terraform%20CI/badge.svg) [![](https://img.shields.io/badge/stability-experimental-red.svg)](#experimental)
 
 # OpenShift via Terraform on Packet
 This collection of modules will deploy  will deploy a bare metal [OpenShift](https://docs.openshift.com/container-platform/latest/installing/installing_bare_metal/installing-bare-metal.html) consisting of (1) ephemeral bootstrap node, (3) control plane nodes, and a user-configured count of worker nodes<sup>[1](#3nodedeployment)</sup> on [Packet](http://packet.com). DNS records are automatically configured using [Cloudflare](http://cloudflare.com).
@@ -84,7 +84,7 @@ cd openshift-packet-deploy/terraform
      terraform output
      ```
 
-## Experimental Statement
+## <a name="experimental"></a>Experimental Statement
 
 This repository is [Experimental](https://github.com/packethost/standards/blob/master/experimental-statement.md)!
 
