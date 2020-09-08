@@ -1,4 +1,4 @@
-name: Development Terraform CI
+name: Terraform CI
 
 on: push
 
